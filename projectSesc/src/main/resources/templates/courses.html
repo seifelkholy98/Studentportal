@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Courses</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        header .btn-light {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #ffffff;
+            color: #007bff;
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-weight: bold;
+            border: 2px solid #ffffff;
+        }
+        header .btn-light:hover {
+            background-color: #0290d8;
+            color: #ffffff;
+            border-color: #0275d8;
+        }
+        main {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .course {
+            background-color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.05);
+            padding: 20px;
+            width: 280px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .course:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        .course h2 {
+            color: #0056b3;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .course .description {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .course .price {
+            color: #28a745;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 40%;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<header>
+  <h1>Browse Courses</h1>
+  <a href="/home" class="btn btn-light">Go to Home Page</a>
+</header>
+<main>
+  <div class="course-list">
+    <!-- Courses will be populated here by JavaScript -->
+  </div>
+</main>
+<!-- Modal for enrollment -->
+<div id="enrollmentModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div id="modalContent"></div>
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    fetch('/api/courses')
+        .then(response => response.json())
+        .then(courses => {
+            const coursesContainer = document.querySelector('.course-list');
+            courses.forEach(course => {
+                const courseElement = document.createElement('div');
+                courseElement.className = 'course';
+                courseElement.innerHTML = `
+                    <h2>${course.courseName}</h2>
+                    <p class="description">${course.description}</p>
+                    <p class="price">$${course.price}</p>
+                `;
+                courseElement.onclick = () => openEnrollmentModal(course);
+                coursesContainer.appendChild(courseElement);
+            });
+        });
+
+    function openEnrollmentModal(course) {
+        const modalContent = `
+            <div>
+                <h2>${course.courseName}</h2>
+                <p>${course.description}</p>
+                <p>Price: $${course.price}</p>
+                <button onclick="enroll(${course.courseId})">Enroll</button>
+            </div>
+        `;
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('enrollmentModal').style.display = 'block';
+    }
+
+    window.enroll = function(courseId) {
+        fetch(`/api/enrollments?courseId=${courseId}`, { method: 'POST' })
+            .then(response => {
+                if (!response.ok) throw new Error('Enrollment failed. You might already be enrolled in this course.');
+                alert('Enrolled successfully!');
+                location.reload(); // Reload to update the course list potentially
+            })
+            .catch(error => alert(error.message));
+    };
+
+    document.querySelector('.close').addEventListener('click', () => {
+        document.getElementById('enrollmentModal').style.display = 'none';
+    });
+
+    window.addEventListener('click', event => {
+        if (event.target === document.getElementById('enrollmentModal')) {
+            document.getElementById('enrollmentModal').style.display = 'none';
+        }
+    });
+});
+</script>
+</body>
+</html>

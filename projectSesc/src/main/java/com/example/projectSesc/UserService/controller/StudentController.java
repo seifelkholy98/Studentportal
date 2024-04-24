@@ -1,78 +1,135 @@
 package com.example.projectSesc.UserService.controller;
 
 import com.example.projectSesc.UserService.domain.Student;
-import com.example.projectSesc.UserService.domain.User;
 import com.example.projectSesc.UserService.service.StudentService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
+
+import jakarta.validation.Valid;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
-@RestController
+@Controller
 @RequestMapping("/api/students")
 public class StudentController {
 
     private final StudentService studentService;
+    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
+    private static final Logger log = LoggerFactory.getLogger(StudentController.class);
 
     @Autowired
-    public StudentController(StudentService studentService) {
+    public StudentController( StudentService studentService, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder) {
         this.studentService = studentService;
+        this.authenticationManager = authenticationManager;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    // Create a new student profile
+
     @PostMapping("/register")
-    public ResponseEntity<Student> registerUser(@RequestBody Student student) {
-        Student registeredUser = studentService.createStudent(student);
-        return ResponseEntity.ok(registeredUser);
-    }
+    public String registerUser(@Valid @ModelAttribute("student") Student student, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+        String rawPassword = student.getPassword();
+        Student registeredStudent = studentService.registerNewStudent(student);
+        try {
 
-    // Retrieve a student by ID
-    @GetMapping("/{studentId}")
-    public Mono<ResponseEntity<Student>> getStudentById(@PathVariable Long studentId) {
-        return studentService.findStudentById(studentId)
-                .map(student -> ResponseEntity.ok(student))  // Directly mapping Student to ResponseEntity<Student>
-                .defaultIfEmpty(ResponseEntity.notFound().build());  // Handling case where Student is not found
-    }
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(student.getUsername(), rawPassword)
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            studentService.notifyFinanceService(registeredStudent.getStudentCode());
+            studentService.notifyLibraryService(registeredStudent.getStudentCode());
 
-    // Update a student profile
-    @PutMapping("/{studentId}")
-    public ResponseEntity<Student> updateStudent(@PathVariable Long studentId, @RequestBody Student studentDetails) {
-        return studentService.updateStudent(studentId, studentDetails)
-                .map(updatedStudent -> ResponseEntity.ok(updatedStudent))
-                .orElse(ResponseEntity.notFound().build());
-    }
+            HttpSession session = request.getSession(true);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
-    // Delete a student profile
-    @DeleteMapping("/{studentId}")
-    public Mono<ResponseEntity<Void>> deleteStudent(@PathVariable Long studentId) {
-        if (studentService.deleteStudent(studentId)) {
-            return Mono.just(ResponseEntity.ok().<Void>build());
-        } else {
-            return Mono.just(ResponseEntity.notFound().build());
+            redirectAttributes.addFlashAttribute("success", "Registration successful. Welcome!");
+            return "redirect:/courses";
+        } catch (AuthenticationException e) {
+            redirectAttributes.addFlashAttribute("error", "Authentication failed: " + e.getMessage());
+            return "redirect:/register";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Registration failed: " + e.getMessage());
+            return "redirect:/register";
         }
     }
 
-    // List all student profiles
-    @GetMapping
-    public Mono<List<Student>> getAllStudents() {
-        return Mono.just(studentService.findAllStudents());
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestParam("username") String username, @RequestParam("password") String password) {
+        try {
+            log.debug("Attempting to authenticate user: {}", username);
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password)
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.debug("Authentication successful for user: {}", username);
+
+            Student student = studentService.findStudentByUsername(username);
+            return ResponseEntity.ok(student);
+        } catch (AuthenticationException e) {
+            log.error("Authentication failed for user: {}", username, e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed: " + e.getMessage());
+        }
     }
 
-    @GetMapping("/{studentId}/eligibility-to-graduate")
-    public Mono<ResponseEntity<String>> checkEligibilityToGraduate(@PathVariable Long studentId) {
-        return studentService.checkEligibilityToGraduate(studentId)
-                .map(isEligible -> {
-                    if (Boolean.TRUE.equals(isEligible)) {
-                        return ResponseEntity.ok("Student is eligible to graduate.");
-                    } else {
-                        return ResponseEntity.ok("Student has outstanding invoices and is not eligible to graduate.");
-                    }
-                })
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getAuthenticatedStudent() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        Student student = studentService.findStudentByUsername(username);
+        return student != null ? ResponseEntity.ok(student) : ResponseEntity.notFound().build();
     }
 
-    // Additional methods and logic as needed
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateAuthenticatedStudent(@Valid @RequestBody Student studentDetails) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Student updatedStudent = studentService.updateStudentByUsername(username, studentDetails);
+        return ResponseEntity.ok(updatedStudent);
+    }
+
+    @DeleteMapping("/profile")
+    public ResponseEntity<Void> deleteAuthenticatedStudent() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        studentService.deleteStudentByUsername(username);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/exists/{username}")
+    public ResponseEntity<Boolean> studentExists(@PathVariable String username) {
+        boolean exists = studentService.studentExists(studentService.findStudentByUsername(username).getStudentId());
+        return ResponseEntity.ok(exists);
+    }
+
+    @GetMapping("/eligibility-to-graduate")
+    public String checkEligibilityToGraduate(Model model) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        List<String> outstandingInvoices = studentService.checkOutstandingInvoices(username);
+        model.addAttribute("outstandingInvoices", outstandingInvoices);
+        model.addAttribute("isEligible", outstandingInvoices.isEmpty());
+        return "eligibility"; // Name of the Thymeleaf template
+    }
+
 }

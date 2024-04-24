@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Courses for Guests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        .course-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .course {
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+            width: calc(33.33% - 20px);
+            cursor: pointer;
+        }
+        .course h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        .course .description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .course .price {
+            color: #007bff;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .enroll-btn {
+            display: block;
+            width: 100%;
+            padding: 10px 0;
+            text-align: center;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .enroll-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Browse Courses for Guests</h1>
+</header>
+<main>
+    <div class="course-list">
+        <!-- Courses will be dynamically populated here -->
+    </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    fetch('/api/courses')
+        .then(response => response.json())
+        .then(courses => {
+            const coursesContainer = document.querySelector('.course-list');
+            courses.forEach(course => {
+                const courseElement = document.createElement('div');
+                courseElement.className = 'course';
+                courseElement.innerHTML = `
+                    <h2>${course.courseName}</h2>
+                    <p class="description">${course.description}</p>
+                    <p class="price">$${course.price}</p>
+                    <a href="/register" class="enroll-btn">Enroll</a>
+                `;
+                coursesContainer.appendChild(courseElement);
+            });
+        });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding-top: 20px;
+        }
+
+        .navbar {
+            background-color: #0056b3;
+            color: #ffffff;
+        }
+
+        .navbar-brand, .navbar-nav .nav-link {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .container {
+            margin-top: 20px;
+        }
+
+        h2, h4 {
+            color: #0056b3;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        p {
+            color: #666;
+            text-align: center;
+        }
+
+        .list-group-item {
+            background-color: #ffffff;
+            color: #333;
+            border: 1px solid #ddd;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .list-group-item:hover {
+            background-color: #e9ecef;
+            color: #0056b3;
+        }
+
+        .btn-outline-success, .btn-outline-primary {
+            color: #ffffff;
+            background-color: #0056b3;
+            border-color: #0056b3;
+            font-weight: 600;
+            width: 200px;
+            margin: 10px auto;
+            display: block;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .btn-outline-primary:hover, .btn-outline-success:hover {
+            background-color: #024497;
+            border-color: #023e88;
+        }
+
+        .btn-primary {
+            background-color: #ff6347;
+            border-color: #ff6347;
+            display: block;
+            width: 200px;
+            margin: 20px auto; /* Center button horizontally and give it some vertical spacing */
+        }
+
+        .btn-primary:hover {
+            background-color: #e5533d;
+            border-color: #e5533d;
+        }
+
+        .dashboard-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light">
+    <a class="navbar-brand" href="#">Student Portal</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="btn btn-outline-success" href="/courses">Browse Courses</a>
+            </li>
+            <li class="nav-item">
+                <a href="/profile" class="btn btn-outline-primary">My Profile</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="dashboard-section">
+        <h2>Welcome, <span th:text="${student.username}">[Student Name]</span></h2>
+        <p><strong>Student ID:</strong> <span th:text="${student.studentCode}">[Student ID]</span></p>
+    </div>
+    <div class="dashboard-section">
+        <h4>Enrolled Courses:</h4>
+        <ul class="list-group">
+            <li class="list-group-item" th:each="enrollment : ${student.enrollments}">
+                <span th:text="${enrollment.course.courseName}">Course Name</span> -
+                <small th:text="${enrollment.course.description}">Course Description</small>
+            </li>
+        </ul>
+    </div>
+    <div class="dashboard-section text-center">
+        <form th:action="@{/api/students/eligibility-to-graduate}" method="get">
+            <button type="submit" class="btn btn-primary">Check Eligibility</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>

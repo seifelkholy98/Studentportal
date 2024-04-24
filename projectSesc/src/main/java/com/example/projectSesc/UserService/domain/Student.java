@@ -1,83 +1,61 @@
 package com.example.projectSesc.UserService.domain;
 
+import com.example.projectSesc.CourseService.domain.Course;
+import com.example.projectSesc.EnrollmentService.domain.Enrollment;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 @Entity
 @Table(name = "students")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Student {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long studentId;
+    protected Long studentId;
 
     @Column(nullable = false, unique = true)
-    private String username;
+    @NotEmpty(message = "Username cannot be empty")
+    protected String username;
 
     @Column(nullable = false)
-    private String password; // Ensure this is encrypted in practice
+    @NotEmpty(message = "Password cannot be empty")
+    private String password;
 
     @Column(nullable = false)
-    private String email;
+    @NotEmpty(message = "Email cannot be empty")
+    protected String email;
 
     @Column(nullable = false)
-    private String surname;
+    protected String surname;
 
+    @Column(name = "role", nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'ROLE_USER'")
+    private String role;
 
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Enrollment> enrollments;
 
-    public Student() {
+    @Column(nullable = false, unique = true)
+    private String studentCode;
+
+    @PrePersist
+    private void initializeStudentCode() {
+        this.studentCode = generateStudentCode();
     }
 
-    public Student(Long studentId,String username , String password , String email , String surname  ) {
-        this.studentId = studentId ;
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.surname  = surname ;
+    private String generateStudentCode() {
+        Random random = new Random();
+        return "c" + String.format("%07d", random.nextInt(10000000));
     }
-
-    // Getters and Setters
-    public Long getId() {
-        return studentId;
-    }
-
-    public void setId(Long studentId) {
-        this.studentId = studentId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getSurname() {
-        return surname;
-    }
-
-    public void setSurname(String surname) {
-        this.surname = surname;
-    }
-
-
-
-    // You might want to include methods for managing the student's course enrollments,
-    // depending on how you decide to model the relationship between students and courses.
 }
