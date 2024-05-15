@@ -58,6 +58,10 @@ public class EnrollmentService {
         // i want to create an invoice here
         referenceNumber = createInvoice(student.getStudentCode(),course.getPrice());
 
+        return createEnrollment(student, course,referenceNumber);
+    }
+
+    public Enrollment createEnrollment(Student student, Course course, String referenceNumber) {
         Enrollment enrollment = new Enrollment();
         enrollment.setStudent(student);
         enrollment.setCourse(course);
@@ -66,6 +70,7 @@ public class EnrollmentService {
         student.getEnrollments().add(enrollment);
         return enrollmentRepository.save(enrollment);
     }
+
     public String createInvoice(String studentCode, BigDecimal price) {
         String url = "http://localhost:8081/invoices";
 

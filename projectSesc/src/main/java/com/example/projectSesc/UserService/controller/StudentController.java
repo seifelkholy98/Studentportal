@@ -58,7 +58,7 @@ public class StudentController {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
             studentService.notifyFinanceService(registeredStudent.getStudentCode());
-            studentService.notifyLibraryService(registeredStudent.getStudentCode());
+           // studentService.notifyLibraryService(registeredStudent.getStudentCode());
 
             HttpSession session = request.getSession(true);
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());

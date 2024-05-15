@@ -52,6 +52,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/students/exists/**","/api/courses/exists/**").permitAll()// Let anyone fetch course data
                         .requestMatchers("http://localhost/api/register").permitAll()
                         .requestMatchers("/register", "/login","/coursesforguests").permitAll()
+                        .requestMatchers("/actuator/prometheus","/metrics").permitAll()
                         .requestMatchers("/courses").hasAuthority("ROLE_USER")
                         .requestMatchers("/api/enrollments/**").authenticated()
                         .anyRequest().authenticated()

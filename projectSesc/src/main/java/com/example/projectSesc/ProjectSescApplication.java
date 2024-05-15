@@ -9,4 +9,5 @@ public class ProjectSescApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ProjectSescApplication.class, args);
 	}
+
 }
